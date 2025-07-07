@@ -1,0 +1,8 @@
+# Redirections pour SPA (Single Page Application)
+/*    /index.html   200
+
+# Redirections de sécurité pour les routes protégées
+/dashboard    /index.html   200
+/connections  /index.html   200
+/reports      /index.html   200
+/settings     /index.html   200
