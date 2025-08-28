@@ -42,6 +42,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       description: 'Créer et gérer vos rapports'
     },
     { 
+      path: '/dashboards', 
+      name: 'Tableaux de bord', 
+      icon: LayoutDashboard,
+      description: 'Organiser vos rapports'
+    },
+    { 
       path: '/settings', 
       name: 'Paramètres', 
       icon: Settings,

@@ -11,6 +11,7 @@ import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Connections from './pages/Connections';
 import Reports from './pages/Reports';
+import Dashboards from './pages/Dashboards';
 import Settings from './pages/Settings';
 
 // Loading component
@@ -83,6 +84,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="connections" element={<Connections />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="dashboards" element={<Dashboards />} />
             <Route path="settings" element={<Settings />} />
           </Route>
 
