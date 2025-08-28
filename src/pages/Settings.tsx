@@ -348,8 +348,12 @@ function Settings() {
                   </form>
                 </div>
               )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
-export default Settings;
+}
+
 export default Settings;
