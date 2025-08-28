@@ -1,112 +1,116 @@
 export interface User {
   id: string;
   username: string;
-  email: string;
+  full_name?: string;
+  avatar_url?: string;
   role: 'admin' | 'user' | 'viewer';
+  preferences: Record<string, any>;
 }
 
 export interface AirtableConnection {
   id: string;
+  user_id: string;
   name: string;
-  apiKey: string;
-  baseId: string;
-  lastSync: Date;
+  api_key: string;
+  base_id: string;
+  description?: string;
+  is_active: boolean;
+  last_sync?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Dashboard {
   id: string;
+  user_id: string;
   name: string;
-  description: string;
-  charts: Chart[];
-  createdAt: Date;
-  updatedAt: Date;
+  description?: string;
+  layout: DashboardLayout[];
+  is_default: boolean;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface Chart {
+export interface DashboardLayout {
   id: string;
-  title: string;
-  type: 'bar' | 'line' | 'pie' | 'table' | 'kpi' | 'doughnut' | 'area' | 'scatter' | 'bubble' | 'radar' | 'polar';
-  config: ChartConfig;
-  data: any;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
-export interface ChartConfig {
-  tableId?: string;
-  fields?: string[];
-  groupBy?: string;
-  aggregation?: 'sum' | 'avg' | 'count' | 'min' | 'max';
+export interface Report {
+  id: string;
+  user_id: string;
+  connection_id: string;
+  name: string;
+  description?: string;
+  type: ReportType;
+  config: ReportConfig;
+  data_cache?: any;
+  cache_expires_at?: string;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ReportType = 'bar' | 'line' | 'pie' | 'doughnut' | 'table' | 'kpi' | 'area' | 'scatter';
+
+export interface ReportConfig {
+  table_id?: string;
+  fields: string[];
   filters?: Filter[];
-  colors?: string[];
-  displayOptions?: {
-    showValues?: boolean;
-    showPercentages?: boolean;
-    showLegend?: boolean;
-    showGrid?: boolean;
-    stacked?: boolean;
-    orientation?: 'vertical' | 'horizontal';
-    valueFormat?: 'number' | 'currency' | 'percentage' | 'decimal';
-    decimalPlaces?: number;
-    currencySymbol?: string;
-    dateFormat?: string;
-  };
-  style?: {
-    backgroundColor?: string;
-    borderRadius?: number;
-    fontFamily?: string;
-    fontSize?: number;
-    fontColor?: string;
-    padding?: number;
-  };
-  axis?: {
-    xAxis?: {
-      title?: string;
-      showTitle?: boolean;
-      showLabels?: boolean;
-      labelRotation?: number;
-    };
-    yAxis?: {
-      title?: string;
-      showTitle?: boolean;
-      showLabels?: boolean;
-      min?: number;
-      max?: number;
-      stepSize?: number;
-    };
-  };
+  group_by?: string;
+  sort_by?: string;
+  sort_direction?: 'asc' | 'desc';
+  limit?: number;
+  chart_options?: ChartOptions;
 }
 
 export interface Filter {
   field: string;
-  operator: 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte' | 'contains' | 'notContains' | 'startsWith' | 'endsWith' | 'isEmpty' | 'isNotEmpty' | 'between';
+  operator: FilterOperator;
   value: any;
   type?: string;
 }
 
-export interface ChartDataPoint {
-  label: string;
-  value: number;
-  color?: string;
-  percentage?: number;
-  additionalData?: Record<string, any>;
+export type FilterOperator = 
+  | 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte' 
+  | 'contains' | 'not_contains' | 'starts_with' | 'ends_with'
+  | 'is_empty' | 'is_not_empty' | 'between';
+
+export interface ChartOptions {
+  colors?: string[];
+  show_legend?: boolean;
+  show_values?: boolean;
+  show_grid?: boolean;
+  stacked?: boolean;
+  responsive?: boolean;
 }
 
-export interface ChartSeries {
+export interface AirtableBase {
+  id: string;
   name: string;
-  data: ChartDataPoint[];
-  color?: string;
+  permission_level: string;
 }
 
-export interface TableColumn {
-  field: string;
-  header: string;
-  type: 'text' | 'number' | 'date' | 'boolean' | 'currency' | 'percentage';
-  format?: {
-    type: string;
-    options?: Record<string, any>;
-  };
-  width?: number;
-  sortable?: boolean;
-  filterable?: boolean;
-  hidden?: boolean;
-  align?: 'left' | 'center' | 'right';
+export interface AirtableTable {
+  id: string;
+  name: string;
+  primary_field_id: string;
+  fields?: AirtableField[];
+}
+
+export interface AirtableField {
+  id: string;
+  name: string;
+  type: string;
+  options?: any;
+}
+
+export interface AirtableRecord {
+  id: string;
+  fields: Record<string, any>;
+  created_time: string;
 }

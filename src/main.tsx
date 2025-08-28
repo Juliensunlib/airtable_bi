@@ -12,13 +12,11 @@ import {
   Tooltip,
   Legend,
   Title,
-  SubTitle,
   Filler,
-  ScatterController,
-  BubbleController,
-  RadarController,
-  PolarAreaController
+  TimeScale,
+  TimeSeriesScale
 } from 'chart.js';
+import 'chartjs-adapter-date-fns';
 import App from './App.tsx';
 import './index.css';
 
@@ -34,12 +32,9 @@ ChartJS.register(
   Tooltip,
   Legend,
   Title,
-  SubTitle,
   Filler,
-  ScatterController,
-  BubbleController,
-  RadarController,
-  PolarAreaController
+  TimeScale,
+  TimeSeriesScale
 );
 
 createRoot(document.getElementById('root')!).render(

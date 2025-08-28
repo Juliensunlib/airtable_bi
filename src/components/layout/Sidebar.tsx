@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuthStore } from '../../stores/authStore';
 import { 
   LayoutDashboard, 
   Database, 
-  BarChart4, 
+  BarChart3, 
   Settings, 
   LogOut, 
   User,
@@ -16,33 +16,33 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { user, logout } = useAuth();
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { user, signOut } = useAuthStore();
   const location = useLocation();
 
   const navItems = [
     { 
       path: '/dashboard', 
       name: 'Tableau de bord', 
-      icon: <LayoutDashboard size={20} />,
+      icon: LayoutDashboard,
       description: 'Vue d\'ensemble de vos données'
     },
     { 
       path: '/connections', 
       name: 'Connexions', 
-      icon: <Database size={20} />,
+      icon: Database,
       description: 'Gérer vos bases Airtable'
     },
     { 
       path: '/reports', 
       name: 'Rapports', 
-      icon: <BarChart4 size={20} />,
+      icon: BarChart3,
       description: 'Créer et gérer vos rapports'
     },
     { 
       path: '/settings', 
       name: 'Paramètres', 
-      icon: <Settings size={20} />,
+      icon: Settings,
       description: 'Configuration de l\'application'
     },
   ];
@@ -51,8 +51,8 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
     onClose();
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     onClose();
   };
 
@@ -76,7 +76,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center">
-                <BarChart4 className="h-6 w-6 text-blue-600" />
+                <BarChart3 className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-3">
                 <h1 className="text-xl font-bold text-white">AirTableau BI</h1>
@@ -102,7 +102,6 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
               </div>
               <div className="ml-3">
                 <p className="text-sm font-semibold text-gray-900">{user.username}</p>
-                <p className="text-xs text-gray-500">{user.email}</p>
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
                   {user.role === 'admin' ? 'Administrateur' : 
                    user.role === 'user' ? 'Utilisateur' : 'Visualiseur'}
@@ -116,6 +115,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
+            const Icon = item.icon;
             return (
               <Link
                 key={item.path}
@@ -127,9 +127,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                 }`}
                 onClick={handleNavClick}
               >
-                <span className={`mr-4 ${isActive ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600'}`}>
-                  {item.icon}
-                </span>
+                <Icon className={`mr-4 h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600'}`} />
                 <div className="flex-1">
                   <div className="font-medium">{item.name}</div>
                   <div className="text-xs text-gray-500 mt-0.5">{item.description}</div>
@@ -156,5 +154,3 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
     </>
   );
 }
-
-export default Sidebar;

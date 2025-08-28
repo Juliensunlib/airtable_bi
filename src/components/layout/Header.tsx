@@ -1,12 +1,12 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Bell, Search, HelpCircle } from 'lucide-react';
+import { Menu, Bell, Search } from 'lucide-react';
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
-function Header({ onMenuClick }: HeaderProps) {
+export default function Header({ onMenuClick }: HeaderProps) {
   const location = useLocation();
   
   const getPageTitle = () => {
@@ -22,14 +22,6 @@ function Header({ onMenuClick }: HeaderProps) {
       default:
         return 'AirTableau BI';
     }
-  };
-
-  const handleHelpClick = () => {
-    window.open('https://support.airtable.com/', '_blank');
-  };
-
-  const handleNotificationClick = () => {
-    alert('Aucune nouvelle notification');
   };
 
   return (
@@ -57,19 +49,7 @@ function Header({ onMenuClick }: HeaderProps) {
           />
         </div>
         
-        <button 
-          onClick={handleHelpClick}
-          className="p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-          title="Aide"
-        >
-          <HelpCircle className="h-5 w-5" />
-        </button>
-        
-        <button 
-          onClick={handleNotificationClick}
-          className="p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 relative transition-colors duration-200"
-          title="Notifications"
-        >
+        <button className="p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 relative transition-colors duration-200">
           <Bell className="h-5 w-5" />
           <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500"></span>
         </button>
@@ -77,5 +57,3 @@ function Header({ onMenuClick }: HeaderProps) {
     </header>
   );
 }
-
-export default Header;

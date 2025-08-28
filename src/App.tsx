@@ -1,77 +1,121 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { useAuth } from './context/AuthContext';
+import { Toaster } from 'react-hot-toast';
+import { useAuthStore } from './stores/authStore';
 
-// Layouts
-import AuthLayout from './layouts/AuthLayout';
-import ProtectedLayout from './layouts/ProtectedLayout';
+// Components
+import LoginForm from './components/auth/LoginForm';
+import Layout from './components/layout/Layout';
 
 // Pages
 import Dashboard from './pages/Dashboard';
 import Connections from './pages/Connections';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import LoginForm from './components/auth/LoginForm';
 
-// Composant pour gérer les erreurs de configuration
-const ConfigurationError: React.FC<{ error: string }> = ({ error }) => {
+// Loading component
+function LoadingScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
-        <div className="text-center">
-          <div className="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Erreur de Configuration</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <div className="text-sm text-gray-500">
-            <p>Vérifiez votre fichier .env et redémarrez l'application.</p>
-          </div>
-        </div>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p className="text-gray-600">Chargement de l'application...</p>
       </div>
     </div>
   );
-};
+}
 
-// Composant principal de l'application
-const AppContent: React.FC = () => {
-  const { error } = useAuth();
-  
-  if (error && error.includes('Configuration')) {
-    return <ConfigurationError error={error} />;
+// Protected Route component
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, initialized } = useAuthStore();
+
+  if (!initialized) {
+    return <LoadingScreen />;
   }
-  
-  return (
-    <Router>
-      <Routes>
-        {/* Auth routes */}
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<LoginForm />} />
-        </Route>
 
-        {/* Protected routes */}
-        <Route element={<ProtectedLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/connections" element={<Connections />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-        {/* Redirect to login by default */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </Router>
-  );
-};
+  return <>{children}</>;
+}
+
+// Auth Route component
+function AuthRoute({ children }: { children: React.ReactNode }) {
+  const { user, initialized } = useAuthStore();
+
+  if (!initialized) {
+    return <LoadingScreen />;
+  }
+
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
 
 function App() {
+  const { initialize } = useAuthStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <Router>
+      <div className="App">
+        <Routes>
+          {/* Auth routes */}
+          <Route path="/login" element={
+            <AuthRoute>
+              <LoginForm />
+            </AuthRoute>
+          } />
+
+          {/* Protected routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="connections" element={<Connections />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: '#10B981',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              duration: 5000,
+              iconTheme: {
+                primary: '#EF4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
+      </div>
+    </Router>
   );
 }
 
