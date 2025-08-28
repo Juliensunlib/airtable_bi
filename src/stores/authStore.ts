@@ -33,6 +33,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         if (error) {
           console.error('Erreur lors de la récupération du profil:', error);
+          // Clear invalid session
+          await supabase.auth.signOut();
           set({ user: null, initialized: true });
           return;
         }
@@ -51,6 +53,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           });
         }
       } else {
+        // Clear any invalid tokens from storage
+        await supabase.auth.signOut();
         set({ user: null, initialized: true });
       }
 
@@ -81,6 +85,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } catch (error) {
       console.error('Erreur d\'initialisation:', error);
+      // Clear invalid session on any error
+      await supabase.auth.signOut();
       set({ user: null, initialized: true });
     }
   },
