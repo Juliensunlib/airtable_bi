@@ -1,14 +1,99 @@
 import React, { useState } from 'react';
-import { Save, User, Lock, Bell } from 'lucide-react';
+import { Save, User, Lock, Bell, UserPlus, Trash2, Edit } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import authService from '../services/authService';
 
 function Settings() {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     email: 'admin@example.com',
     language: 'fr',
     notifications: true,
     darkMode: false
   });
+  const [users, setUsers] = useState<any[]>([]);
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: '',
+    username: '',
+    password: '',
+    role: 'user'
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success');
 
+  React.useEffect(() => {
+    if (user?.role === 'admin') {
+      loadUsers();
+    }
+  }, [user]);
+
+  const loadUsers = async () => {
+    try {
+      const { data, error } = await authService.supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des utilisateurs:', error);
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage('');
+
+    try {
+      // Créer l'utilisateur via Supabase Auth
+      const { data, error } = await authService.signUp(
+        newUser.email,
+        newUser.password,
+        { username: newUser.username, role: newUser.role }
+      );
+
+      if (error) {
+        throw new Error(error);
+      }
+
+      setMessage('Utilisateur créé avec succès !');
+      setMessageType('success');
+      setNewUser({ email: '', username: '', password: '', role: 'user' });
+      setShowUserForm(false);
+      loadUsers();
+    } catch (error: any) {
+      setMessage(error.message || 'Erreur lors de la création de l\'utilisateur');
+      setMessageType('error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+      return;
+    }
+
+    try {
+      const { error } = await authService.supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+      
+      if (error) throw error;
+      
+      setMessage('Utilisateur supprimé avec succès');
+      setMessageType('success');
+      loadUsers();
+    } catch (error: any) {
+      setMessage(error.message || 'Erreur lors de la suppression');
+      setMessageType('error');
+    }
+  };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const newValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
@@ -22,6 +107,21 @@ function Settings() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Paramètres sauvegardés:', formData);
+    setMessage('Paramètres sauvegardés avec succès !');
+    setMessageType('success');
+  };
+
+  const MessageAlert = ({ message, type }: { message: string; type: 'success' | 'error' }) => {
+    if (!message) return null;
+    
+    const bgColor = type === 'success' ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500';
+    const textColor = type === 'success' ? 'text-green-700' : 'text-red-700';
+
+    return (
+      <div className={`${bgColor} border-l-4 p-4 rounded mb-4`}>
+        <p className={`text-sm ${textColor}`}>{message}</p>
+      </div>
+    );
   };
 
   return (
@@ -33,6 +133,8 @@ function Settings() {
             Gérez vos préférences et paramètres de compte
           </p>
         </div>
+        
+        <MessageAlert message={message} type={messageType} />
         
         <div className="bg-white shadow-sm rounded-xl overflow-hidden mb-8">
           <div className="px-6 py-8">
@@ -150,9 +252,183 @@ function Settings() {
             </form>
           </div>
         </div>
+
+        {/* Gestion des utilisateurs - Admins seulement */}
+        {user?.role === 'admin' && (
+          <div className="bg-white shadow-sm rounded-xl overflow-hidden">
+            <div className="px-6 py-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold leading-6 text-gray-900 flex items-center">
+                  <UserPlus className="h-5 w-5 text-gray-500 mr-2" />
+                  Gestion des utilisateurs
+                </h3>
+                <button
+                  onClick={() => setShowUserForm(!showUserForm)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center text-sm"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  {showUserForm ? 'Annuler' : 'Nouvel utilisateur'}
+                </button>
+              </div>
+
+              {showUserForm && (
+                <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <h4 className="text-md font-medium text-gray-900 mb-4">Créer un nouvel utilisateur</h4>
+                  <form onSubmit={handleCreateUser} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={newUser.email}
+                        onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="utilisateur@example.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nom d'utilisateur *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newUser.username}
+                        onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Nom Prénom"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Mot de passe *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        value={newUser.password}
+                        onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Minimum 6 caractères"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Rôle
+                      </label>
+                      <select
+                        value={newUser.role}
+                        onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="user">Utilisateur</option>
+                        <option value="admin">Administrateur</option>
+                        <option value="viewer">Visualiseur</option>
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2 flex justify-end space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowUserForm(false)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {isLoading ? 'Création...' : 'Créer l\'utilisateur'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
       </div>
     </div>
   );
 }
 
+              {/* Liste des utilisateurs */}
+              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                <table className="min-w-full divide-y divide-gray-300">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Utilisateur
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Rôle
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Créé le
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {users.map((userItem) => (
+                      <tr key={userItem.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                              <User size={16} className="text-white" />
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{userItem.username}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {userItem.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            userItem.role === 'admin' ? 'bg-red-100 text-red-800' :
+                            userItem.role === 'user' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {userItem.role === 'admin' ? 'Administrateur' :
+                             userItem.role === 'user' ? 'Utilisateur' : 'Visualiseur'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(userItem.created_at).toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            <button 
+                              className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
+                              title="Modifier"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            {userItem.id !== user?.id && (
+                              <button 
+                                onClick={() => handleDeleteUser(userItem.id)}
+                                className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 export default Settings;
