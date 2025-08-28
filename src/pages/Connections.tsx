@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseEnabled } from '../lib/supabase';
 import { airtableService } from '../services/airtableService';
 import { 
   PlusCircle, 
@@ -41,6 +41,13 @@ export default function Connections() {
 
   const loadConnections = async () => {
     if (!user) return;
+
+    // Mode développement
+    if (!isSupabaseEnabled) {
+      setConnections([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);

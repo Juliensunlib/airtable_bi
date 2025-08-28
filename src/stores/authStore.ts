@@ -1,7 +1,29 @@
 import { create } from 'zustand';
-import { supabase, handleSupabaseError } from '../lib/supabase';
+import { supabase, handleSupabaseError, isSupabaseEnabled } from '../lib/supabase';
 import type { User } from '../types';
 import toast from 'react-hot-toast';
+
+// Utilisateurs de développement
+const DEV_USERS = [
+  {
+    id: 'dev-admin',
+    username: 'admin',
+    email: 'admin@airtableau.com',
+    password: 'admin123',
+    full_name: 'Administrateur',
+    role: 'admin' as const,
+    preferences: {}
+  },
+  {
+    id: 'dev-user',
+    username: 'user',
+    email: 'user@airtableau.com', 
+    password: 'user123',
+    full_name: 'Utilisateur',
+    role: 'user' as const,
+    preferences: {}
+  }
+];
 
 interface AuthState {
   user: User | null;
@@ -21,6 +43,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initialized: false,
 
   initialize: async () => {
+    // Mode développement sans Supabase
+    if (!isSupabaseEnabled) {
+      console.log('Mode développement - Supabase désactivé');
+      set({ initialized: true });
+      return;
+    }
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -94,6 +123,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signIn: async (email: string, password: string) => {
     set({ loading: true });
     try {
+      // Mode développement
+      if (!isSupabaseEnabled) {
+        const user = DEV_USERS.find(u => u.email === email && u.password === password);
+        if (user) {
+          set({ 
+            user: {
+              id: user.id,
+              username: user.username,
+              full_name: user.full_name,
+              role: user.role,
+              preferences: user.preferences
+            }
+          });
+          toast.success('Connexion réussie (mode développement) !');
+          return;
+        } else {
+          throw new Error('Identifiants incorrects');
+        }
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -113,6 +162,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signUp: async (email: string, password: string, username: string, fullName?: string) => {
     set({ loading: true });
     try {
+      // Mode développement
+      if (!isSupabaseEnabled) {
+        toast.success('Inscription réussie (mode développement) ! Utilisez les comptes de test.');
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -143,6 +198,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: async () => {
     set({ loading: true });
     try {
+      // Mode développement
+      if (!isSupabaseEnabled) {
+        set({ user: null });
+        toast.success('Déconnexion réussie');
+        set({ loading: false });
+        return;
+      }
+
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       set({ user: null });
@@ -158,6 +221,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   resetPassword: async (email: string) => {
     set({ loading: true });
     try {
+      // Mode développement
+      if (!isSupabaseEnabled) {
+        toast.success('Email de réinitialisation envoyé (mode développement) !');
+        set({ loading: false });
+        return;
+      }
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`
       });
@@ -178,6 +248,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ loading: true });
     try {
+      // Mode développement
+      if (!isSupabaseEnabled) {
+        set({ 
+          user: { ...user, ...updates }
+        });
+        toast.success('Profil mis à jour (mode développement) !');
+        set({ loading: false });
+        return;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({

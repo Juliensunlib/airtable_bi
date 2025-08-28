@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
+import { isSupabaseEnabled } from '../../lib/supabase';
 import { Mail, Lock, User, Eye, EyeOff, BarChart3, Loader2 } from 'lucide-react';
 
 export default function LoginForm() {
@@ -125,6 +126,18 @@ export default function LoginForm() {
               : 'Connectez-vous à votre tableau de bord'
             }
           </p>
+          
+          {!isSupabaseEnabled && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>Mode développement</strong> - Utilisez ces comptes de test :
+              </p>
+              <div className="mt-2 text-xs text-yellow-700">
+                <p>• Admin: admin@airtableau.com / admin123</p>
+                <p>• User: user@airtableau.com / user123</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="card p-8">
