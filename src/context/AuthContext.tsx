@@ -26,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState<boolean>(false);
 
   useEffect(() => {
     let mounted = true;
@@ -34,14 +35,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkUser = async () => {
       try {
         setIsLoading(true);
+        
+        // Vérifier d'abord si Supabase est configuré
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        
+        if (!supabaseUrl || !supabaseKey) {
+          console.error('Variables Supabase manquantes');
+          if (mounted) {
+            setError('Configuration Supabase manquante. Veuillez vérifier vos variables d\'environnement.');
+            setUser(null);
+            setInitialized(true);
+          }
+          return;
+        }
+        
         const currentUser = await authService.getCurrentUser();
         if (mounted) {
           setUser(currentUser);
+          setInitialized(true);
         }
       } catch (err) {
         console.error('Erreur lors de la vérification de l\'utilisateur:', err);
         if (mounted) {
           setUser(null);
+          setError('Erreur de connexion à la base de données');
+          setInitialized(true);
         }
       } finally {
         if (mounted) {
@@ -53,13 +72,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkUser();
 
     // Écouter les changements d'authentification
-    const { data: { subscription } } = authService.onAuthStateChange((user) => {
-      if (mounted) {
-        setUser(user);
-        setIsLoading(false);
-        setError(null);
-      }
-    });
+    let subscription: any = null;
+    
+    // Seulement si Supabase est configuré
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (supabaseUrl && supabaseKey) {
+      const { data } = authService.onAuthStateChange((user) => {
+        if (mounted) {
+          setUser(user);
+          setIsLoading(false);
+          setError(null);
+        }
+      });
+      subscription = data.subscription;
+    }
 
     return () => {
       mounted = false;
@@ -67,10 +95,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Fonction de fallback pour le mode développement
+  const loginFallback = async (email: string, password: string) => {
+    // Mode développement avec comptes locaux
+    const devAccounts = [
+      { email: 'admin@airtableau.com', password: 'admin123', username: 'admin', role: 'admin' as const },
+      { email: 'user@airtableau.com', password: 'user123', username: 'user', role: 'user' as const },
+      { email: 'demo@airtableau.com', password: 'demo123', username: 'demo', role: 'viewer' as const }
+    ];
+
+    const account = devAccounts.find(acc => acc.email === email && acc.password === password);
+    
+    if (account) {
+      const user: AuthUser = {
+        id: `dev_${account.username}`,
+        email: account.email,
+        username: account.username,
+        role: account.role
+      };
+      
+      // Stocker en local pour la session
+      localStorage.setItem('devUser', JSON.stringify(user));
+      setUser(user);
+      return { error: null };
+    }
+    
+    return { error: 'Email ou mot de passe incorrect' };
+  };
+
+  // Vérifier s'il y a un utilisateur dev en local
+  useEffect(() => {
+    if (!initialized) return;
+    
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      // Mode développement - vérifier le localStorage
+      const devUser = localStorage.getItem('devUser');
+      if (devUser) {
+        try {
+          const user = JSON.parse(devUser);
+          setUser(user);
+        } catch (err) {
+          localStorage.removeItem('devUser');
+        }
+      }
+    }
+  }, [initialized]);
+
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
     
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    // Si Supabase n'est pas configuré, utiliser le mode développement
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn('Mode développement activé - Supabase non configuré');
+      const result = await loginFallback(email, password);
+      setIsLoading(false);
+      if (result.error) {
+        setError(result.error);
+      }
+      return result;
+    }
+
     try {
       const { data, error } = await authService.signIn(email, password);
       
@@ -91,6 +182,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (email: string, password: string, username: string) => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      setError('Inscription non disponible en mode développement');
+      return { error: 'Inscription non disponible en mode développement' };
+    }
+    
     setIsLoading(true);
     setError(null);
     
@@ -113,6 +212,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      // Mode développement
+      localStorage.removeItem('devUser');
+      setUser(null);
+      setError(null);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await authService.signOut();
@@ -127,6 +237,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const resetPassword = async (email: string) => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      setError('Réinitialisation non disponible en mode développement');
+      return { error: 'Réinitialisation non disponible en mode développement' };
+    }
+    
     setError(null);
     try {
       const { error } = await authService.resetPassword(email);

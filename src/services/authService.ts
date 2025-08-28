@@ -4,18 +4,23 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Variables d\'environnement Supabase manquantes. Veuillez configurer VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY');
+let supabase: any = null;
+
+// Créer le client Supabase seulement si les variables sont disponibles
+if (supabaseUrl && supabaseKey) {
+  supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce'
+    }
+  });
+} else {
+  console.warn('Variables Supabase manquantes - mode développement activé');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce'
-  }
-});
+export { supabase };
 
 export interface AuthUser {
   id: string;
@@ -27,6 +32,10 @@ export interface AuthUser {
 class AuthService {
   // Inscription avec email/mot de passe
   async signUp(email: string, password: string, userData: { username: string; role?: string }) {
+    if (!supabase) {
+      throw new Error('Supabase non configuré');
+    }
+    
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -54,6 +63,10 @@ class AuthService {
 
   // Connexion avec email/mot de passe
   async signIn(email: string, password: string) {
+    if (!supabase) {
+      throw new Error('Supabase non configuré');
+    }
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -74,6 +87,10 @@ class AuthService {
 
   // Déconnexion
   async signOut() {
+    if (!supabase) {
+      return { error: null };
+    }
+    
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
@@ -86,6 +103,10 @@ class AuthService {
 
   // Récupérer l'utilisateur actuel
   async getCurrentUser(): Promise<AuthUser | null> {
+    if (!supabase) {
+      return null;
+    }
+    
     try {
       // Vérifier d'abord s'il y a une session active
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -141,6 +162,17 @@ class AuthService {
 
   // Écouter les changements d'authentification
   onAuthStateChange(callback: (user: AuthUser | null) => void) {
+    if (!supabase) {
+      // Retourner un mock pour éviter les erreurs
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {}
+          }
+        }
+      };
+    }
+    
     return supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
       
@@ -155,6 +187,10 @@ class AuthService {
 
   // Réinitialiser le mot de passe
   async resetPassword(email: string) {
+    if (!supabase) {
+      throw new Error('Supabase non configuré');
+    }
+    
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`
@@ -170,6 +206,10 @@ class AuthService {
 
   // Mettre à jour le mot de passe
   async updatePassword(newPassword: string) {
+    if (!supabase) {
+      throw new Error('Supabase non configuré');
+    }
+    
     try {
       const { error } = await supabase.auth.updateUser({
         password: newPassword
@@ -185,6 +225,10 @@ class AuthService {
 
   // Vérifier si l'utilisateur est connecté
   async isAuthenticated(): Promise<boolean> {
+    if (!supabase) {
+      return false;
+    }
+    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       return !!session;
@@ -196,6 +240,10 @@ class AuthService {
 
   // Obtenir la session actuelle
   async getSession() {
+    if (!supabase) {
+      return null;
+    }
+    
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) throw error;
