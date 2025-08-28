@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Save, User, Lock, Bell, UserPlus, Trash2, Edit } from 'lucide-react';
+import { Save, User, Lock, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import authService from '../services/authService';
 
 function Settings() {
   const { user } = useAuth();
@@ -11,93 +10,8 @@ function Settings() {
     notifications: true,
     darkMode: false
   });
-  const [users, setUsers] = useState<any[]>([]);
-  const [showUserForm, setShowUserForm] = useState(false);
-  const [newUser, setNewUser] = useState({
-    email: '',
-    username: '',
-    password: '',
-    role: 'user'
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
-
-  React.useEffect(() => {
-    if (user?.role === 'admin') {
-      loadUsers();
-    }
-  }, [user]);
-
-  const loadUsers = async () => {
-    setIsLoadingUsers(true);
-    try {
-      const { data, error } = await authService.supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setUsers(data || []);
-    } catch (error) {
-      console.error('Erreur lors du chargement des utilisateurs:', error);
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  };
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setMessage('');
-
-    try {
-      // Créer l'utilisateur via Supabase Auth
-      const { data, error } = await authService.signUp(
-        newUser.email,
-        newUser.password,
-        { username: newUser.username, role: newUser.role }
-      );
-
-      if (error) {
-        throw new Error(error);
-      }
-
-      setMessage('Utilisateur créé avec succès !');
-      setMessageType('success');
-      setNewUser({ email: '', username: '', password: '', role: 'user' });
-      setShowUserForm(false);
-      loadUsers();
-    } catch (error: any) {
-      setMessage(error.message || 'Erreur lors de la création de l\'utilisateur');
-      setMessageType('error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
-      return;
-    }
-
-    try {
-      const { error } = await authService.supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
-      
-      if (error) throw error;
-      
-      setMessage('Utilisateur supprimé avec succès');
-      setMessageType('success');
-      loadUsers();
-    } catch (error: any) {
-      setMessage(error.message || 'Erreur lors de la suppression');
-      setMessageType('error');
-    }
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -114,6 +28,7 @@ function Settings() {
     console.log('Paramètres sauvegardés:', formData);
     setMessage('Paramètres sauvegardés avec succès !');
     setMessageType('success');
+    setTimeout(() => setMessage(''), 3000);
   };
 
   const MessageAlert = ({ message, type }: { message: string; type: 'success' | 'error' }) => {
@@ -141,7 +56,7 @@ function Settings() {
         
         <MessageAlert message={message} type={messageType} />
         
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden mb-8">
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden">
           <div className="px-6 py-8">
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 gap-y-8 gap-x-6 sm:grid-cols-6">
@@ -258,189 +173,16 @@ function Settings() {
           </div>
         </div>
 
-        {/* Gestion des utilisateurs - Admins seulement */}
+        {/* Message pour les admins */}
         {user?.role === 'admin' && (
-          <div className="bg-white shadow-sm rounded-xl overflow-hidden">
-            <div className="px-6 py-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold leading-6 text-gray-900 flex items-center">
-                  <UserPlus className="h-5 w-5 text-gray-500 mr-2" />
-                  Gestion des utilisateurs
-                </h3>
-                <button
-                  onClick={() => setShowUserForm(!showUserForm)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center text-sm"
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  {showUserForm ? 'Annuler' : 'Nouvel utilisateur'}
-                </button>
-              </div>
-
-              {showUserForm && (
-                <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <h4 className="text-md font-medium text-gray-900 mb-4">Créer un nouvel utilisateur</h4>
-                  <form onSubmit={handleCreateUser} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={newUser.email}
-                        onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="utilisateur@example.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nom d'utilisateur *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={newUser.username}
-                        onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Nom Prénom"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Mot de passe *
-                      </label>
-                      <input
-                        type="password"
-                        required
-                        minLength={6}
-                        value={newUser.password}
-                        onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Minimum 6 caractères"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Rôle
-                      </label>
-                      <select
-                        value={newUser.role}
-                        onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="user">Utilisateur</option>
-                        <option value="admin">Administrateur</option>
-                        <option value="viewer">Visualiseur</option>
-                      </select>
-                    </div>
-                    <div className="sm:col-span-2 flex justify-end space-x-3">
-                      <button
-                        type="button"
-                        onClick={() => setShowUserForm(false)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                      >
-                        Annuler
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        {isLoading ? 'Création...' : 'Créer l\'utilisateur'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-
-              {/* Liste des utilisateurs */}
-              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Utilisateur
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Rôle
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Créé le
-                      </th>
-                      <th scope="col" className="relative px-6 py-3">
-                        <span className="sr-only">Actions</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((userItem) => (
-                      <tr key={userItem.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                <User className="h-5 w-5 text-blue-600" />
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {userItem.username}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {userItem.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            userItem.role === 'admin' 
-                              ? 'bg-red-100 text-red-800' 
-                              : userItem.role === 'user'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {userItem.role === 'admin' ? 'Administrateur' : 
-                             userItem.role === 'user' ? 'Utilisateur' : 'Visualiseur'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(userItem.created_at).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-2">
-                            <button
-                              className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
-                              title="Modifier"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            {userItem.id !== user?.id && (
-                              <button
-                                onClick={() => handleDeleteUser(userItem.id)}
-                                className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                                title="Supprimer"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {users.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    Aucun utilisateur trouvé
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">
+              Fonctionnalités administrateur
+            </h3>
+            <p className="text-blue-700">
+              La gestion des utilisateurs sera disponible prochainement. 
+              En attendant, vous pouvez gérer les utilisateurs directement depuis le dashboard Supabase.
+            </p>
           </div>
         )}
       </div>
