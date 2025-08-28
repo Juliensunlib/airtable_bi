@@ -13,14 +13,14 @@ export default function Reports() {
             </p>
           </div>
           
-          <button className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium text-white hover:bg-blue-700 flex items-center mt-4 sm:mt-0 transition-colors duration-200 shadow-sm">
+          <button className="btn-primary flex items-center mt-4 sm:mt-0">
             <PlusCircle className="h-4 w-4 mr-2" />
             Nouveau rapport
           </button>
         </div>
         
         {/* Empty state */}
-        <div className="text-center py-12 bg-white rounded-xl shadow-sm">
+        <div className="text-center py-12 card">
           <div className="max-w-md mx-auto">
             <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <FileText className="h-8 w-8 text-blue-600" />
@@ -29,7 +29,7 @@ export default function Reports() {
             <p className="text-gray-500 mb-4">
               Créez des rapports personnalisés à partir de vos données Airtable
             </p>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+            <button className="btn-primary">
               Créer votre premier rapport
             </button>
           </div>

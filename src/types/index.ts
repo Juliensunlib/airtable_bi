@@ -33,11 +33,15 @@ export interface Dashboard {
 }
 
 export interface DashboardLayout {
-  id: string;
+  i: string;
   x: number;
   y: number;
   w: number;
   h: number;
+  minW?: number;
+  minH?: number;
+  maxW?: number;
+  maxH?: number;
 }
 
 export interface Report {
@@ -59,6 +63,7 @@ export type ReportType = 'bar' | 'line' | 'pie' | 'doughnut' | 'table' | 'kpi' |
 
 export interface ReportConfig {
   table_id?: string;
+  table_name?: string;
   fields: string[];
   filters?: Filter[];
   group_by?: string;
@@ -87,6 +92,9 @@ export interface ChartOptions {
   show_grid?: boolean;
   stacked?: boolean;
   responsive?: boolean;
+  title?: string;
+  x_axis_label?: string;
+  y_axis_label?: string;
 }
 
 export interface AirtableBase {
@@ -113,4 +121,16 @@ export interface AirtableRecord {
   id: string;
   fields: Record<string, any>;
   created_time: string;
+}
+
+export interface ChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor?: string | string[];
+    borderColor?: string | string[];
+    borderWidth?: number;
+    fill?: boolean;
+  }[];
 }

@@ -8,7 +8,9 @@ import {
   Settings, 
   LogOut, 
   User,
-  X
+  X,
+  Shield,
+  Eye
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -56,6 +58,39 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     onClose();
   };
 
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <Shield className="h-3 w-3" />;
+      case 'viewer':
+        return <Eye className="h-3 w-3" />;
+      default:
+        return <User className="h-3 w-3" />;
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'Administrateur';
+      case 'viewer':
+        return 'Visualiseur';
+      default:
+        return 'Utilisateur';
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-red-100 text-red-800';
+      case 'viewer':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-blue-100 text-blue-800';
+    }
+  };
+
   return (
     <>
       {/* Overlay */}
@@ -67,15 +102,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } flex flex-col`}>
         
         {/* Header */}
-        <div className="p-6 border-b bg-gradient-to-r from-blue-600 to-blue-700">
+        <div className="p-6 border-b bg-gradient-to-r from-blue-600 to-indigo-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center">
+              <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
                 <BarChart3 className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-3">
@@ -97,14 +132,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {user && (
           <div className="px-6 py-4 border-b bg-gray-50">
             <div className="flex items-center">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
                 <User size={20} className="text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-sm font-semibold text-gray-900">{user.username}</p>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
-                  {user.role === 'admin' ? 'Administrateur' : 
-                   user.role === 'user' ? 'Utilisateur' : 'Visualiseur'}
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-semibold text-gray-900">
+                  {user.full_name || user.username}
+                </p>
+                <p className="text-xs text-gray-500 mb-1">@{user.username}</p>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
+                  {getRoleIcon(user.role)}
+                  <span className="ml-1">{getRoleLabel(user.role)}</span>
                 </span>
               </div>
             </div>
@@ -122,7 +160,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 to={item.path}
                 className={`flex items-center px-4 py-3 rounded-xl transition-all duration-200 group ${
                   isActive 
-                    ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600' 
+                    ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 shadow-sm' 
                     : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
                 }`}
                 onClick={handleNavClick}

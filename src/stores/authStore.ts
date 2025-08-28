@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { supabase, handleSupabaseError } from '../lib/supabase';
 import type { User } from '../types';
 import toast from 'react-hot-toast';
 
@@ -8,9 +8,10 @@ interface AuthState {
   loading: boolean;
   initialized: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signUp: (email: string, password: string, username: string, fullName?: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updateProfile: (updates: Partial<User>) => Promise<void>;
   initialize: () => Promise<void>;
 }
 
@@ -24,11 +25,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
+
+        if (error) {
+          console.error('Erreur lors de la récupération du profil:', error);
+          set({ user: null, initialized: true });
+          return;
+        }
 
         if (profile) {
           set({ 
@@ -38,7 +45,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               full_name: profile.full_name,
               avatar_url: profile.avatar_url,
               role: profile.role,
-              preferences: profile.preferences
+              preferences: profile.preferences || {}
             },
             initialized: true 
           });
@@ -64,7 +71,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 full_name: profile.full_name,
                 avatar_url: profile.avatar_url,
                 role: profile.role,
-                preferences: profile.preferences
+                preferences: profile.preferences || {}
               }
             });
           }
@@ -89,31 +96,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (error) throw error;
       toast.success('Connexion réussie !');
     } catch (error: any) {
-      toast.error(error.message || 'Erreur de connexion');
+      const message = handleSupabaseError(error);
+      toast.error(message);
       throw error;
     } finally {
       set({ loading: false });
     }
   },
 
-  signUp: async (email: string, password: string, username: string) => {
+  signUp: async (email: string, password: string, username: string, fullName?: string) => {
     set({ loading: true });
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             username,
-            full_name: username
+            full_name: fullName || username
           }
         }
       });
 
       if (error) throw error;
-      toast.success('Inscription réussie ! Vérifiez votre email.');
+      
+      if (data.user && !data.session) {
+        toast.success('Inscription réussie ! Vérifiez votre email pour confirmer votre compte.');
+      } else {
+        toast.success('Inscription réussie !');
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Erreur d\'inscription');
+      const message = handleSupabaseError(error);
+      toast.error(message);
       throw error;
     } finally {
       set({ loading: false });
@@ -128,7 +142,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: null });
       toast.success('Déconnexion réussie');
     } catch (error: any) {
-      toast.error(error.message || 'Erreur de déconnexion');
+      const message = handleSupabaseError(error);
+      toast.error(message);
     } finally {
       set({ loading: false });
     }
@@ -137,11 +152,46 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   resetPassword: async (email: string) => {
     set({ loading: true });
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
       if (error) throw error;
       toast.success('Email de réinitialisation envoyé !');
     } catch (error: any) {
-      toast.error(error.message || 'Erreur de réinitialisation');
+      const message = handleSupabaseError(error);
+      toast.error(message);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateProfile: async (updates: Partial<User>) => {
+    const { user } = get();
+    if (!user) return;
+
+    set({ loading: true });
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          username: updates.username,
+          full_name: updates.full_name,
+          avatar_url: updates.avatar_url,
+          preferences: updates.preferences
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      set({ 
+        user: { ...user, ...updates }
+      });
+      
+      toast.success('Profil mis à jour !');
+    } catch (error: any) {
+      const message = handleSupabaseError(error);
+      toast.error(message);
       throw error;
     } finally {
       set({ loading: false });
