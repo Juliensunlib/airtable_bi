@@ -20,6 +20,7 @@ function Settings() {
     role: 'user'
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
 
@@ -30,6 +31,7 @@ function Settings() {
   }, [user]);
 
   const loadUsers = async () => {
+    setIsLoadingUsers(true);
     try {
       const { data, error } = await authService.supabase
         .from('users')
@@ -40,6 +42,8 @@ function Settings() {
       setUsers(data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des utilisateurs:', error);
+    } finally {
+      setIsLoadingUsers(false);
     }
   };
 
