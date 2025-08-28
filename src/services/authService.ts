@@ -109,11 +109,29 @@ class AuthService {
       
       if (!user) return null;
 
+      // Récupérer le profil utilisateur depuis la table users
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('username, role')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Erreur lors de la récupération du profil:', profileError);
+        // Fallback sur les métadonnées si le profil n'existe pas encore
+        return {
+          id: user.id,
+          email: user.email!,
+          username: user.user_metadata?.username || user.email?.split('@')[0],
+          role: user.user_metadata?.role || 'user'
+        };
+      }
+
       return {
         id: user.id,
         email: user.email!,
-        username: user.user_metadata?.username || user.email?.split('@')[0],
-        role: user.user_metadata?.role || 'user'
+        username: profile?.username || user.email?.split('@')[0],
+        role: profile?.role || 'user'
       };
     } catch (error) {
       console.error('Erreur lors de la récupération de l\'utilisateur:', error);
