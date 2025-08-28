@@ -3,6 +3,10 @@ import type { AirtableConnection, AirtableBase, AirtableTable, AirtableRecord, F
 const AIRTABLE_API_BASE = 'https://api.airtable.com/v0';
 const AIRTABLE_META_API = 'https://api.airtable.com/v0/meta';
 
+// Configuration automatique avec les variables d'environnement
+const DEFAULT_API_KEY = import.meta.env.VITE_AIRTABLE_API_KEY;
+const DEFAULT_BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID;
+
 class AirtableService {
   private async makeRequest(url: string, apiKey: string, options: RequestInit = {}) {
     const response = await fetch(url, {
@@ -31,6 +35,37 @@ class AirtableService {
     }
 
     return response.json();
+  }
+
+  // Méthode pour obtenir la clé API par défaut
+  getDefaultApiKey(): string | null {
+    return DEFAULT_API_KEY || null;
+  }
+
+  // Méthode pour obtenir l'ID de base par défaut
+  getDefaultBaseId(): string | null {
+    return DEFAULT_BASE_ID || null;
+  }
+
+  // Méthode pour tester la connexion avec les paramètres par défaut
+  async testDefaultConnection(): Promise<{ success: boolean; message: string; bases?: AirtableBase[] }> {
+    if (!DEFAULT_API_KEY) {
+      return { success: false, message: 'Clé API Airtable non configurée' };
+    }
+
+    try {
+      const bases = await this.getBases(DEFAULT_API_KEY);
+      return { 
+        success: true, 
+        message: `Connexion réussie - ${bases.length} base(s) trouvée(s)`,
+        bases 
+      };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        message: error.message || 'Impossible de se connecter à Airtable' 
+      };
+    }
   }
 
   async testConnection(apiKey: string): Promise<{ success: boolean; message: string }> {

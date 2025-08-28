@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { useAirtableStore } from '../stores/airtableStore';
 import { supabase } from '../lib/supabase';
 import { PlusCircle, BarChart3, Database, FileText, TrendingUp, Users, Activity } from 'lucide-react';
 import type { AirtableConnection, Report, Dashboard as DashboardType } from '../types';
+import ConnectionStatus from '../components/airtable/ConnectionStatus';
 
 export default function Dashboard() {
   const { user } = useAuthStore();
+  const { defaultConnection } = useAirtableStore();
   const [stats, setStats] = useState({
     connections: 0,
     reports: 0,
@@ -101,6 +104,11 @@ export default function Dashboard() {
           <p className="text-gray-600 mt-1">
             Voici un aperçu de vos données et analyses
           </p>
+        </div>
+
+        {/* Airtable Connection Status */}
+        <div className="mb-8">
+          <ConnectionStatus />
         </div>
 
         {/* Stats Cards */}

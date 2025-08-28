@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './stores/authStore';
+import { useAirtableStore } from './stores/airtableStore';
 
 // Components
 import LoginForm from './components/auth/LoginForm';
@@ -58,9 +59,16 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const { initialize } = useAuthStore();
+  const { initializeDefaultConnection } = useAirtableStore();
 
   useEffect(() => {
     initialize();
+    // Initialiser la connexion Airtable après l'authentification
+    const timer = setTimeout(() => {
+      initializeDefaultConnection();
+    }, 1000);
+    
+    return () => clearTimeout(timer);
   }, [initialize]);
 
   return (
