@@ -87,6 +87,19 @@ class AuthService {
   // Récupérer l'utilisateur actuel
   async getCurrentUser(): Promise<AuthUser | null> {
     try {
+      // Vérifier d'abord s'il y a une session active
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Erreur lors de la récupération de la session:', sessionError);
+        return null;
+      }
+      
+      if (!session) {
+        // Pas de session active, retourner null sans erreur
+        return null;
+      }
+
       const { data: { user }, error } = await supabase.auth.getUser();
       
       if (error) {
