@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { KeyRound, User, Mail, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -12,8 +12,16 @@ const LoginForm: React.FC = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
+  const [isDevelopmentMode, setIsDevelopmentMode] = useState(false);
   
   const { login, register, resetPassword, isLoading, error } = useAuth();
+
+  useEffect(() => {
+    // Vérifier si on est en mode développement
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    setIsDevelopmentMode(!supabaseUrl || !supabaseKey);
+  }, []);
 
   const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
     setMessage(text);
@@ -181,27 +189,50 @@ const LoginForm: React.FC = () => {
         </div>
         
         <div className="bg-white rounded-xl shadow-lg p-8">
+          {isDevelopmentMode && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-yellow-800 mb-2">Mode Développement</h4>
+              <p className="text-xs text-yellow-700 mb-2">
+                Supabase n'est pas configuré. Utilisez ces comptes de test :
+              </p>
+              <div className="space-y-1 text-xs text-yellow-700">
+                <div><strong>Admin:</strong> admin@airtableau.com / admin123</div>
+                <div><strong>Utilisateur:</strong> user@airtableau.com / user123</div>
+                <div><strong>Demo:</strong> demo@airtableau.com / demo123</div>
+              </div>
+            </div>
+          )}
+          
           <form className="space-y-6" onSubmit={handleSubmit}>
             {isRegisterMode && (
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom d'utilisateur *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
+              <>
+                {isDevelopmentMode && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700">
+                      L'inscription n'est pas disponible en mode développement.
+                    </p>
                   </div>
-                  <input
-                    id="username"
-                    type="text"
-                    required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10"
-                    placeholder="Votre nom d'utilisateur"
-                  />
+                )}
+                <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom d'utilisateur *
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="username"
+                      type="text"
+                      required
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10"
+                      placeholder="Votre nom d'utilisateur"
+                    />
+                  </div>
                 </div>
-              </div>
+              </>
             )}
             
             <div>
@@ -299,9 +330,10 @@ const LoginForm: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowForgotPassword(true)}
-                    className="text-sm text-gray-600 hover:text-gray-500"
+                    className={`text-sm ${isDevelopmentMode ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-500'}`}
+                    disabled={isDevelopmentMode}
                   >
-                    Mot de passe oublié ?
+                    {isDevelopmentMode ? 'Mot de passe oublié ? (Non disponible)' : 'Mot de passe oublié ?'}
                   </button>
                 </div>
               )}
@@ -312,8 +344,13 @@ const LoginForm: React.FC = () => {
         {/* Informations de déploiement */}
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            Version {import.meta.env.VITE_APP_VERSION || '1.0.0'} - {import.meta.env.VITE_ENVIRONMENT || 'development'}
+            Version {import.meta.env.VITE_APP_VERSION || '1.0.0'} - {isDevelopmentMode ? 'development (local)' : import.meta.env.VITE_ENVIRONMENT || 'development'}
           </p>
+          {isDevelopmentMode && (
+            <p className="text-xs text-yellow-600 mt-1">
+              ⚠️ Mode développement - Configurez Supabase pour la production
+            </p>
+          )}
         </div>
       </div>
     </div>
