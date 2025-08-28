@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { Save, User, Lock, Bell } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 
 function Settings() {
-  const { user } = useAuth();
   const [formData, setFormData] = useState({
-    email: user?.email || '',
+    email: 'admin@sunlib.fr',
     language: 'fr',
     notifications: true,
     darkMode: false
@@ -173,18 +171,15 @@ function Settings() {
           </div>
         </div>
 
-        {/* Message pour les admins */}
-        {user?.role === 'admin' && (
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-blue-900 mb-2">
-              Fonctionnalités administrateur
-            </h3>
-            <p className="text-blue-700">
-              La gestion des utilisateurs sera disponible prochainement. 
-              En attendant, vous pouvez gérer les utilisateurs directement depuis le dashboard Supabase.
-            </p>
-          </div>
-        )}
+        {/* Message temporaire */}
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">
+            Gestion des utilisateurs
+          </h3>
+          <p className="text-blue-700">
+            La gestion des utilisateurs sera réactivée une fois le problème d'authentification résolu.
+          </p>
+        </div>
       </div>
     </div>
   );
